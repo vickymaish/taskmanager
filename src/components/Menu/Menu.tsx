@@ -5,6 +5,7 @@ import BtnAddTask from "../Utilities/BtnAddTask";
 import Directories from "./Directories/Directories";
 import NavLinks from "./NavLinks";
 import LayoutMenus from "../Utilities/LayoutMenus";
+import { NavLink } from "react-router-dom"; // ✅ Import NavLink
 
 const classLinkActive =
   "text-rose-600 bg-violet-100 border-r-4 border-rose-500 dark:bg-slate-700/[.2] dark:text-slate-200 dark:border-slate-200";
@@ -16,6 +17,7 @@ const Menu: React.FC = () => {
   const closeMenuHandler = () => {
     dispatch(menusActions.closeMenuHeader());
   };
+
   return (
     <LayoutMenus
       menuOpen={menuOpen}
@@ -29,6 +31,18 @@ const Menu: React.FC = () => {
         <BtnAddTask className="my-8 mx-4" />
         <NavLinks classActive={classLinkActive} />
         <Directories classActive={classLinkActive} />
+
+        {/* ✅ Added Statistics link separately at the bottom */}
+        <div className="mt-auto p-4">
+          <NavLink
+            to="/statistics"
+            className={`block px-4 py-2 text-center transition hover:text-rose-600 dark:hover:text-slate-200 ${
+              window.location.pathname === "/statistics" ? classLinkActive : ""
+            }`}
+          >
+            📊 Statistics
+          </NavLink>
+        </div>
       </header>
     </LayoutMenus>
   );

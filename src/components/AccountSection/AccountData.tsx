@@ -36,7 +36,7 @@ const AccountData: React.FC = () => {
           href="https://github.com/aridsm"
           className="mt-4 bg-rose-100 p-2 rounded-md text-rose-600 text-center transition hover:bg-rose-200 dark:bg-slate-700/[.3] dark:text-slate-200"
         >
-          Projected by Ariane Morelato
+          Eva Njoroge and Patrick
         </a>
       </section>
     </LayoutMenus>

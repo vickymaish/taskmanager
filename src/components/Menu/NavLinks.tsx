@@ -22,11 +22,16 @@ const links = [
     name: "Uncompleted tasks",
     path: "/uncompleted",
   },
+  {
+    name: "📊 Statistics", // ✅ Added Statistics link
+    path: "/statistics",
+  },
 ];
 
 const NavLinks: React.FC<{ classActive: string }> = ({ classActive }) => {
   const route = useLocation();
   const currentPath = route.pathname;
+
   return (
     <nav>
       <ul className="grid gap-2">
