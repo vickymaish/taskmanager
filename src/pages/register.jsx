@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -8,6 +8,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
@@ -17,7 +18,7 @@ export default function Register() {
 
     try {
       const { data } = await axios.post(
-        "https://tasks-app-backend-v1.onrender.com/api/auth/register",
+        "https://tasks-app-backend-ugys.onrender.com/api/auth/register",
         { username, email, password },
         { withCredentials: true }
       );
@@ -35,43 +36,69 @@ export default function Register() {
   };
 
   return (
-    <div className="p-6 max-w-md mx-auto">
-      <h2 className="text-xl mb-4">Register</h2>
+    <div className="p-6 max-w-md mx-auto bg-white shadow-lg rounded-lg">
+      <h2 className="text-2xl font-bold text-center mb-6">Register</h2>
 
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="p-2 border w-full mb-2"
-          required
-        />
+      <form onSubmit={handleRegister} className="space-y-4">
+        <div>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="p-2 border border-gray-300 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+        </div>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="p-2 border w-full mb-2"
-          required
-        />
+        <div>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="p-2 border border-gray-300 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+        </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="p-2 border w-full mb-2"
-          required
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="p-2 border border-gray-300 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-2 text-gray-500"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
+        </div>
 
-        <button type="submit" className="p-2 bg-green-500 text-white w-full" disabled={loading}>
+        <button
+          type="submit"
+          className={`p-2 w-full text-white rounded ${
+            loading ? "bg-green-300 cursor-not-allowed" : "bg-green-500 hover:bg-green-600"
+          }`}
+          disabled={loading}
+        >
           {loading ? "Registering..." : "Register"}
         </button>
       </form>
 
-      {error && <p className="text-red-500 mt-2">{error}</p>}
+      {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+
+      <p className="mt-4 text-center">
+        Already have an account?{" "}
+        <Link to="/login" className="text-blue-500 hover:underline">
+          Login
+        </Link>
+      </p>
     </div>
   );
 }

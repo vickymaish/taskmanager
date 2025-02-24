@@ -6,6 +6,7 @@ import Menu from "./components/Menu/Menu";
 import TasksSection from "./components/TasksSection/TasksSection";
 import ModalCreateTask from "./components/Utilities/ModalTask";
 import Login from "./pages/login";
+import Register from "./pages/register"; // ✅ Import Register page
 import { Task } from "./interfaces";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { modalActions } from "./store/Modal.store";
@@ -39,7 +40,7 @@ const App: React.FC = () => {
 
   return (
     <Routes>
-      {/* Redirect from `/` to `/login` only if not authenticated */}
+      {/* Redirect from `/` to `/login` if not authenticated */}
       <Route
         path="/"
         element={
@@ -47,7 +48,7 @@ const App: React.FC = () => {
         }
       />
 
-      {/* Login Route */}
+      {/* ✅ Login Route */}
       <Route
         path="/login"
         element={
@@ -55,7 +56,15 @@ const App: React.FC = () => {
         }
       />
 
-      {/* Protected Tasks Route */}
+      {/* ✅ Register Route */}
+      <Route
+        path="/register"
+        element={
+          isAuthenticated ? <Navigate to="/tasks" replace /> : <Register />
+        }
+      />
+
+      {/* ✅ Protected Tasks Route */}
       <Route
         path="/tasks"
         element={
@@ -79,7 +88,7 @@ const App: React.FC = () => {
         }
       />
 
-      {/* ✅ New Statistics Route (Protected) */}
+      {/* ✅ Protected Statistics Route */}
       <Route
         path="/statistics"
         element={isAuthenticated ? <Statistics /> : <Navigate to="/login" replace />}

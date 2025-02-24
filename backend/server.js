@@ -10,17 +10,33 @@ const wakatimeRoutes = require("./routes/waka");
 
 const app = express();
 
-// Allow multiple origins
-const allowedOrigins = ["http://localhost:3000", "http://localhost:5173","https://tasks-app-frontend-v1.onrender.com"];
+// ✅ Allow multiple origins
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://tasks-frontend-2.onrender.com"
+];
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  allowedHeaders: "Origin,X-Requested-With,Content-Type,Accept,Authorization",
-}));
+// ✅ CORS Middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Origin,X-Requested-With,Content-Type,Accept,Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Max-Age", "86400"); // Cache preflight response for 24h
 
-app.use(express.json()); // Ensure body is parsed properly
+  // ✅ Handle preflight requests
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204); // No Content
+  }
+
+  next();
+});
+
+app.use(express.json()); // Ensure JSON body is parsed properly
 app.use(cookieParser());
 
 if (!process.env.MONGO_URI) {
@@ -28,14 +44,14 @@ if (!process.env.MONGO_URI) {
   process.exit(1);
 }
 
-// Connect to MongoDB
+// ✅ Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Error connecting to MongoDB:", err));
 
 const SECRET = process.env.JWT_SECRET || "supersecret";
 
-// Nodemailer Configuration
+// ✅ Nodemailer Configuration
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -44,14 +60,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// User Schema
+// ✅ User Schema
 const User = mongoose.model("User", new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 }));
 
-// Task Schema
+// ✅ Task Schema
 const Task = mongoose.model("Task", new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   title: String,
@@ -59,7 +75,7 @@ const Task = mongoose.model("Task", new mongoose.Schema({
   completed: { type: Boolean, default: false },
 }));
 
-// Middleware to verify JWT token
+// ✅ Middleware to verify JWT token
 const authMiddleware = (req, res, next) => {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
@@ -71,35 +87,8 @@ const authMiddleware = (req, res, next) => {
   });
 };
 
-// Routes
+// ✅ Routes
 app.use("/api", wakatimeRoutes);
-
-// ✅ User Registration
-app.post("/api/auth/register", async (req, res) => {
-  try {
-    console.log("Received Register Request:", req.body);
-    const { username, email, password } = req.body;
-
-    // Check if user exists (by username or email)
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-    if (existingUser) {
-      return res.status(400).json({ error: "Username or Email already taken" });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Save new user
-    const newUser = new User({ username, email, password: hashedPassword });
-    await newUser.save();
-
-    res.json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error("Registration Error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
 
 // ✅ User Login
 app.post("/api/auth/login", async (req, res) => {
@@ -118,7 +107,13 @@ app.post("/api/auth/login", async (req, res) => {
     if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
     const token = jwt.sign({ userId: user._id }, SECRET, { expiresIn: "1h" });
-    res.cookie("token", token, { httpOnly: true }).json({ message: "Logged in", token });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true, // Ensure secure cookie in production
+      sameSite: "None", // Required for cross-origin cookies
+    }).json({ message: "Logged in", token });
+
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -127,7 +122,11 @@ app.post("/api/auth/login", async (req, res) => {
 
 // ✅ Logout
 app.post("/api/auth/logout", (req, res) => {
-  res.clearCookie("token").json({ message: "Logged out" });
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+  }).json({ message: "Logged out" });
 });
 
 // ✅ Get User's Tasks
@@ -188,6 +187,8 @@ app.post("/send-alert", authMiddleware, async (req, res) => {
   }
 });
 
-// Start Server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+// ✅ Start Server
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT}`);
+});
