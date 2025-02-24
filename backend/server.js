@@ -7,7 +7,6 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const nodemailer = require("nodemailer");
 const wakatimeRoutes = require("./routes/waka");
-//import wakatimeRoutes from "./routes/waka"; 
 
 const app = express();
 
@@ -21,10 +20,9 @@ app.use(cors({
   allowedHeaders: "Origin,X-Requested-With,Content-Type,Accept,Authorization",
 }));
 
-app.use(express.json());
+app.use(express.json()); // Ensure body is parsed properly
 app.use(cookieParser());
 
-// Check if MONGO_URI is defined in the environment variables
 if (!process.env.MONGO_URI) {
   console.error("MONGO_URI is not defined in .env file");
   process.exit(1);
@@ -35,7 +33,6 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Error connecting to MongoDB:", err));
 
-// JWT Secret
 const SECRET = process.env.JWT_SECRET || "supersecret";
 
 // Nodemailer Configuration
@@ -77,71 +74,118 @@ const authMiddleware = (req, res, next) => {
 // Routes
 app.use("/api", wakatimeRoutes);
 
-// User Registration
+// ✅ User Registration
 app.post("/api/auth/register", async (req, res) => {
-  const { username, email, password } = req.body;
   try {
+    console.log("Received Register Request:", req.body);
+    const { username, email, password } = req.body;
+
+    // Check if user exists (by username or email)
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      return res.status(400).json({ error: "Username or Email already taken" });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, email, password: hashedPassword });
-    await user.save();
+
+    // Save new user
+    const newUser = new User({ username, email, password: hashedPassword });
+    await newUser.save();
+
     res.json({ message: "User registered successfully" });
   } catch (err) {
-    res.status(400).json({ error: "User already exists" });
+    console.error("Registration Error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// User Login
+
+// ✅ User Login
 app.post("/api/auth/login", async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) return res.status(400).json({ error: "User not found" });
+  try {
+    console.log("Received Login Request:", req.body);
+    const { email, password } = req.body;
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
 
-  const token = jwt.sign({ userId: user._id }, SECRET, { expiresIn: "1h" });
-  res.cookie("token", token, { httpOnly: true }).json({ message: "Logged in", token });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: "User not found" });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+
+    const token = jwt.sign({ userId: user._id }, SECRET, { expiresIn: "1h" });
+    res.cookie("token", token, { httpOnly: true }).json({ message: "Logged in", token });
+  } catch (err) {
+    console.error("Login Error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-// Logout
+// ✅ Logout
 app.post("/api/auth/logout", (req, res) => {
   res.clearCookie("token").json({ message: "Logged out" });
 });
 
-// Get User's Tasks
+// ✅ Get User's Tasks
 app.get("/api/tasks", authMiddleware, async (req, res) => {
-  const tasks = await Task.find({ userId: req.user.userId });
-  res.json(tasks);
-});
-
-// Add Task
-app.post("/api/tasks", authMiddleware, async (req, res) => {
-  const { title, description } = req.body;
-  const task = new Task({ userId: req.user.userId, title, description });
-  await task.save();
-  res.json(task);
-});
-
-// Send Email Alerts for Unfinished Tasks
-app.post("/send-alert", authMiddleware, async (req, res) => {
-  const user = await User.findById(req.user.userId);
-  const tasks = await Task.find({ userId: req.user.userId, completed: false });
-
-  if (!tasks.length) {
-    return res.status(400).json({ error: "No unfinished tasks to remind about" });
+  try {
+    const tasks = await Task.find({ userId: req.user.userId });
+    res.json(tasks);
+  } catch (err) {
+    console.error("Error fetching tasks:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
+});
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: user.email,
-    subject: "Unfinished Tasks Alert",
-    text: `You have the following unfinished tasks: ${tasks.map(task => task.title).join(", ")}`,
-  };
+// ✅ Add Task
+app.post("/api/tasks", authMiddleware, async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title || !description) {
+      return res.status(400).json({ error: "Title and description are required" });
+    }
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) return res.status(500).send(error.toString());
-    res.status(200).send("Email sent: " + info.response);
-  });
+    const task = new Task({ userId: req.user.userId, title, description });
+    await task.save();
+    res.json(task);
+  } catch (err) {
+    console.error("Error adding task:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ✅ Send Email Alerts for Unfinished Tasks
+app.post("/send-alert", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    const tasks = await Task.find({ userId: req.user.userId, completed: false });
+
+    if (!tasks.length) {
+      return res.status(400).json({ error: "No unfinished tasks to remind about" });
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: "Unfinished Tasks Alert",
+      text: `You have the following unfinished tasks: ${tasks.map(task => task.title).join(", ")}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Email sending error:", error);
+        return res.status(500).send(error.toString());
+      }
+      res.status(200).send("Email sent: " + info.response);
+    });
+  } catch (err) {
+    console.error("Send Alert Error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Start Server
