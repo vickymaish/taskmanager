@@ -18,7 +18,7 @@ export default function Register() {
 
     try {
       const { data } = await axios.post(
-        "https://tasks-app-backend-ugys.onrender.com/api/auth/register",
+        "http://localhost:10000/api/auth/register",
         { username, email, password },
         { withCredentials: true }
       );

@@ -1,13 +1,15 @@
 import React from "react";
 import LayoutRoutes from "../Utilities/LayoutRoutes";
-import { useAppSelector } from "../../store/hooks";
 import useDescriptionTitle from "../hooks/useDescriptionTitle";
+import { Task } from "../../interfaces";
 
-const Home: React.FC = () => {
-  const tasks = useAppSelector((state) => state.tasks.tasks);
+interface HomeProps {
+  tasks: Task[];
+}
 
+const Home: React.FC<HomeProps> = ({ tasks }) => {
   useDescriptionTitle("Organize your tasks", "All tasks");
-  return <LayoutRoutes title="All tasks" tasks={tasks}></LayoutRoutes>;
+  return <LayoutRoutes title="All tasks" tasks={tasks} />;
 };
 
 export default Home;

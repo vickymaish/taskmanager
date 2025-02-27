@@ -49,3 +49,5 @@ docker-compose.yml
 # Misc
 *.bak
 Thumbs.db
+
+backend/routes/waka.js

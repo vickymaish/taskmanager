@@ -6,20 +6,18 @@ import Menu from "./components/Menu/Menu";
 import TasksSection from "./components/TasksSection/TasksSection";
 import ModalCreateTask from "./components/Utilities/ModalTask";
 import Login from "./pages/login";
-import Register from "./pages/register"; // ✅ Import Register page
+import Register from "./pages/register";
 import { Task } from "./interfaces";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { modalActions } from "./store/Modal.store";
 import { tasksActions } from "./store/Tasks.store";
-import Statistics from "./pages/statistics"; // ✅ Import Statistics page
+import Statistics from "./pages/statistics";
 
 const App: React.FC = () => {
   const modal = useAppSelector((state) => state.modal);
+  const tasks = useAppSelector((state) => state.tasks.tasks);
   const dispatch = useAppDispatch();
-
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem("token")
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
 
   useEffect(() => {
     const checkAuth = () => {
@@ -29,6 +27,12 @@ const App: React.FC = () => {
     window.addEventListener("storage", checkAuth);
     return () => window.removeEventListener("storage", checkAuth);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(tasksActions.fetchTasks());
+    }
+  }, [isAuthenticated, dispatch]);
 
   const closeModalCreateTask = () => {
     dispatch(modalActions.closeModalCreateTask());
@@ -40,7 +44,6 @@ const App: React.FC = () => {
 
   return (
     <Routes>
-      {/* Redirect from `/` to `/login` if not authenticated */}
       <Route
         path="/"
         element={
@@ -48,7 +51,6 @@ const App: React.FC = () => {
         }
       />
 
-      {/* ✅ Login Route */}
       <Route
         path="/login"
         element={
@@ -56,7 +58,6 @@ const App: React.FC = () => {
         }
       />
 
-      {/* ✅ Register Route */}
       <Route
         path="/register"
         element={
@@ -64,9 +65,8 @@ const App: React.FC = () => {
         }
       />
 
-      {/* ✅ Protected Tasks Route */}
       <Route
-        path="/tasks"
+        path="/tasks/*"
         element={
           isAuthenticated ? (
             <div className="bg-slate-200 min-h-screen text-slate-600 dark:bg-slate-900 dark:text-slate-400 xl:text-base sm:text-sm text-xs">
@@ -78,7 +78,7 @@ const App: React.FC = () => {
                 />
               )}
               <Menu />
-              <TasksSection />
+              <TasksSection tasks={tasks} />
               <Footer />
               <AccountData />
             </div>
@@ -88,7 +88,6 @@ const App: React.FC = () => {
         }
       />
 
-      {/* ✅ Protected Statistics Route */}
       <Route
         path="/statistics"
         element={isAuthenticated ? <Statistics /> : <Navigate to="/login" replace />}

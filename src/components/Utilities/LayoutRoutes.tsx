@@ -15,7 +15,6 @@ const LayoutRoutes: React.FC<Props> = ({ title, tasks }) => {
   const [isListInView1, setIsListInView1] = useState<boolean>(false);
 
   const dispatch = useAppDispatch();
-
   const { sortedBy, setSortedBy, sortedTasks } = useSortTasks(tasks);
 
   const openModalHandler = () => {
@@ -45,18 +44,20 @@ const LayoutRoutes: React.FC<Props> = ({ title, tasks }) => {
         }`}
       >
         {sortedTasks.map((task) => (
-          <TaskItem key={task.id} isListInView1={isListInView1} task={task} />
+          <li key={task.id}>
+            <TaskItem isListInView1={isListInView1} task={task} />
+          </li>
         ))}
         <li>
           <button
             onClick={openModalHandler}
             className={`border-2 border-slate-300
-             text-slate-400 w-full rounded-lg
+            text-slate-400 w-full rounded-lg
               border-dashed transition hover:bg-slate-300
-               hover:text-slate-500
-               dark:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 ${
-                 isListInView1 ? "h-20 sm:h-32" : "h-52 sm:h-64"
-               }`}
+              hover:text-slate-500
+              dark:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 ${
+                isListInView1 ? "h-20 sm:h-32" : "h-52 sm:h-64"
+              }`}
           >
             Add new task
           </button>

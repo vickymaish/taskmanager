@@ -17,7 +17,7 @@ export default function Login() {
 
     try {
       const { data } = await axios.post(
-        "https://tasks-app-backend-ugys.onrender.com/api/auth/login",
+        "http://localhost:10000/api/auth/login",
         { email, password },
         { withCredentials: true }
       );

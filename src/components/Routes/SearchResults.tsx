@@ -3,8 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import useDescriptionTitle from "../hooks/useDescriptionTitle";
 import useSearchQuery from "../hooks/useSearchQuery";
 import LayoutRoutes from "../Utilities/LayoutRoutes";
+import { Task } from "../../interfaces";
 
-const SearchResults: React.FC = () => {
+interface SearchResultsProps {
+  tasks: Task[];
+}
+
+const SearchResults: React.FC<SearchResultsProps> = ({ tasks }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -13,7 +18,6 @@ const SearchResults: React.FC = () => {
   useEffect(() => {
     const query = searchParams.get("q");
     if (!query) {
-      // se "q" for igual a '' ou "q" não existir
       navigate("/");
     } else {
       setCurrQueryParam(query);
@@ -26,7 +30,7 @@ const SearchResults: React.FC = () => {
 
   useDescriptionTitle(title, title);
 
-  return <LayoutRoutes title={title} tasks={matchedTasks}></LayoutRoutes>;
+  return <LayoutRoutes title={title} tasks={matchedTasks} />;
 };
 
 export default SearchResults;

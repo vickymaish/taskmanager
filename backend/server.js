@@ -14,7 +14,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
-  "https://tasks-frontend-2.onrender.com"
+  "https://tasks-frontend-2.onrender.com",
+  "http://localhost:10000",
 ];
 
 // ✅ CORS Middleware
@@ -45,7 +46,7 @@ if (!process.env.MONGO_URI) {
 }
 
 // ✅ Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Error connecting to MongoDB:", err));
 
@@ -73,6 +74,7 @@ const Task = mongoose.model("Task", new mongoose.Schema({
   title: String,
   description: String,
   completed: { type: Boolean, default: false },
+  date: { type: Date , required:true }// ✅ Add this line  , default: Date.now
 }));
 
 // ✅ Middleware to verify JWT token
@@ -89,6 +91,29 @@ const authMiddleware = (req, res, next) => {
 
 // ✅ Routes
 app.use("/api", wakatimeRoutes);
+
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ error: "User already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ username, email, password: hashedPassword });
+    await user.save();
+
+    res.status(201).json({ message: "User registered successfully" });
+
+  } catch (err) {
+    console.error("Registration Error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 // ✅ User Login
 app.post("/api/auth/login", async (req, res) => {
@@ -143,19 +168,43 @@ app.get("/api/tasks", authMiddleware, async (req, res) => {
 // ✅ Add Task
 app.post("/api/tasks", authMiddleware, async (req, res) => {
   try {
-    const { title, description } = req.body;
-    if (!title || !description) {
-      return res.status(400).json({ error: "Title and description are required" });
+    const { title, description, date } = req.body; // ✅ Extract date from req.body
+    if (!title || !description || !date) {
+      return res.status(400).json({ error: "Title, description, and date are required" });
     }
 
-    const task = new Task({ userId: req.user.userId, title, description });
+    const task = new Task({ userId: req.user.userId, title, description, date }); // ✅ Use the extracted date
     await task.save();
-    res.json(task);
+
+    // Fetch user's email
+    const user = await User.findById(req.user.userId);
+    
+    if (user) {
+      // Email Content
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "New Task Created",
+        text: `Your task "${title}" has been added successfully!\n\nDescription: ${description}`,
+      };
+
+      // Send Email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Email sending error:", error);
+        } else {
+          console.log("Email sent:", info.response);
+        }
+      });
+    }
+
+    res.json({ message: "Task created and email sent!", task });
   } catch (err) {
     console.error("Error adding task:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 // ✅ Send Email Alerts for Unfinished Tasks
 app.post("/send-alert", authMiddleware, async (req, res) => {

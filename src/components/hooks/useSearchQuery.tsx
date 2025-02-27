@@ -8,14 +8,20 @@ const useSearchQuery = (searchQuery: string) => {
   const [matchedTasks, setMatchedTasks] = useState<Task[]>([]);
 
   useEffect(() => {
+    if (!searchQuery.trim().length) {
+      setMatchedTasks([]);
+      return;
+    }
+
     const filteredTasks = tasks.filter((task: Task) => {
+      if (!task.title) {
+        console.warn("Task with missing title:", task);
+        return false;
+      }
       return task.title.toLowerCase().includes(searchQuery.toLowerCase());
     });
-    if (searchQuery.trim().length) {
-      setMatchedTasks(filteredTasks);
-    } else {
-      setMatchedTasks([]);
-    }
+
+    setMatchedTasks(filteredTasks);
   }, [searchQuery, tasks]);
 
   return matchedTasks;

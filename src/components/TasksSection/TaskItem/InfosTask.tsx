@@ -7,7 +7,7 @@ const InfosTask: React.FC<{ task: Task; isListInView1: boolean }> = ({
   task,
   isListInView1,
 }) => {
-  const dateFormated = useDate(task.date);
+  const dateFormated = useDate(task.date || "2023-01-01")  // Format the date using the hook
 
   return (
     <div className={`flex flex-col flex-1 ${isListInView1 ? "mr-6" : ""}`}>
