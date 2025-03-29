@@ -42,30 +42,36 @@ const ModalCreateTask: React.FC<{
   const [date, setDate] = useState(task?.date?.split("T")[0] || today); // Removes the 'T' if present
   const [isImportant, setIsImportant] = useState(task?.important || false);
   const [isCompleted, setIsCompleted] = useState(task?.completed || false);
-  const [selectedDirectory, setSelectedDirectory] = useState(task?.dir || directories[0]);
+  const [selectedDirectory, setSelectedDirectory] = useState(
+    task?.dir || (directories.find((d: string) => d.toLowerCase() === 'main') || directories[0] || 'Main')
+  );
+  
 
   const isTitleValid = useRef(false);
   const isDateValid = useRef(false);
 
-  const addNewTaskHandler = (event: React.FormEvent): void => {
+  const addNewTaskHandler = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();
-
+    console.log("Selected Directory:", selectedDirectory); // Add this
+    console.log("Available Directories:", directories); // Add this
+  
     isTitleValid.current = title.trim().length > 0;
     isDateValid.current = date.trim().length > 0;
-
+  
     if (isTitleValid.current && isDateValid.current) {
+      const isoDate = new Date(date).toISOString().split("T")[0];
       const newTask: Task = {
-        title,
-        dir: selectedDirectory,
-        description,
-        date,
+        title: title || "Untitled Task",
+        dir: selectedDirectory.trim(),
+        description: description || "No description provided",
+        date: isoDate,
         completed: isCompleted,
         important: isImportant,
         id: task?.id || Date.now().toString(),
         userid: task?.id || Date.now().toString(),
       };
       console.log("Task being sent:", newTask);
-      onConfirm(newTask);
+      await onConfirm(newTask);
       onClose();
     } else {
       console.warn("Invalid task submission: Title or Date is missing");

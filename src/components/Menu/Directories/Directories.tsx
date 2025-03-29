@@ -1,34 +1,33 @@
-import React, { useState } from "react";
-import { ReactComponent as Arrow } from "../../../assets/arrow.svg";
-import ContentDirectories from "./ContentDirectories";
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAppSelector } from "../../../store/hooks";
+import { Task } from "../../../interfaces";
 
-const Directories: React.FC<{ classActive: string }> = ({ classActive }) => {
-  const [isDirectoriesOpen, setIsDirectoriesOpen] = useState<boolean>(true);
-
-  const toggleDirectoriesOpen = () => {
-    setIsDirectoriesOpen((prevState) => !prevState);
-  };
+const ContentDirectories: React.FC<{ classActive: string }> = ({ classActive }) => {
+  const directories = useAppSelector((state) => state.tasks.directories);
+  const location = useLocation();
 
   return (
-    <div className="py-4">
-      <button
-        className={`flex items-center w-full mx-4 mb-2 ${
-          isDirectoriesOpen ? "dark:text-slate-200" : ""
-        }`}
-        onClick={toggleDirectoriesOpen}
-      >
-        <Arrow
-          className={`w-3 h-3 mr-2 rotate-90 transition ${
-            isDirectoriesOpen ? "rotate-180" : ""
-          }`}
-        />
-        Directories
-      </button>
-      <div className={isDirectoriesOpen ? "visible" : "hidden"}>
-        <ContentDirectories classActive={classActive} />
-      </div>
-    </div>
+    <ul className="max-h-36 overflow-auto">
+      {directories.map((dir: string) => {
+        // Check if current path matches directory path
+        const isActive = location.pathname === `/tasks/dir/${dir}`;
+        
+        return (
+          <li key={dir} className="flex items-center pr-4 pl-9 py-1">
+            <Link
+              to={`/tasks/dir/${dir}`}
+              className={`w-full hover:text-rose-600 dark:hover:text-slate-200 ${
+                isActive ? classActive : ""
+              }`}
+            >
+              {dir}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 };
 
-export default Directories;
+export default ContentDirectories;

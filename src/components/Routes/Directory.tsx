@@ -1,47 +1,37 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Task } from "../../interfaces";
+import React from "react";
+import { useParams, Navigate } from "react-router-dom";
 import { useAppSelector } from "../../store/hooks";
-import useDescriptionTitle from "../hooks/useDescriptionTitle";
 import LayoutRoutes from "../Utilities/LayoutRoutes";
+import { Task } from "../../interfaces";
 
-interface DirectoryProps {
-  tasks: Task[];
-}
-
-const Directory: React.FC<DirectoryProps> = ({ tasks }) => {
+const Directory: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
+  const { dir } = useParams<{ dir: string }>();
   const directories = useAppSelector((state) => state.tasks.directories);
-  const params = useParams();
-  const navigate = useNavigate();
+  const allTasks = useAppSelector((state) => state.tasks.tasks);
 
-  const [tasksInCurrentDirectory, setTasksInCurrentDirectory] = useState<Task[]>([]);
+  // Always treat undefined/null dir as "Main"
+  const effectiveDir = dir || 'Main';
+  
+  // Enhanced debug logs with proper typing
+  console.log("Effective directory:", effectiveDir);
+  console.log("All tasks:", allTasks.map((t: Task) => ({ 
+    id: t.id, 
+    dir: t.dir,
+    title: t.title 
+  })));
 
-  useEffect(() => {
-    if (!params.dir) {
-      navigate("/");
-      return;
-    }
+  // Filter tasks - handle both undefined and "Main" cases
+  const dirTasks = allTasks.filter((task: Task) => {
+    const taskDir = (task.dir || 'main').trim().toLowerCase();
+    const targetDir = effectiveDir.trim().toLowerCase();
+    
+    console.log(`Comparing: ${taskDir} === ${targetDir} (task ID: ${task.id})`);
+    return taskDir === targetDir;
+  });
 
-    const dirExists = directories.includes(params.dir);
-    if (!dirExists) {
-      navigate("/");
-    }
-
-    const tasksFiltered = tasks.filter((task: Task) => task.dir === params.dir);
-    setTasksInCurrentDirectory(tasksFiltered);
-  }, [directories, navigate, params.dir, tasks]);
-
-  useDescriptionTitle(
-    `Tasks in "${params.dir}"`,
-    params.dir ? params.dir + " directory" : ""
-  );
-
-  return (
-    <LayoutRoutes
-      title={`${params.dir}'s tasks`}
-      tasks={tasksInCurrentDirectory}
-    />
-  );
+  console.log("Filtered tasks count:", dirTasks.length);
+  console.log("Filtered tasks details:", dirTasks.map((t: Task) => t.id));
+  
+  return <LayoutRoutes title={`${effectiveDir} tasks`} tasks={dirTasks} />;
 };
-
 export default Directory;
