@@ -1,17 +1,14 @@
 import { createSlice, PayloadAction, createAsyncThunk, Middleware } from "@reduxjs/toolkit";
 import { Task } from "../interfaces";
 
-// Type for API error responses
 interface ApiError {
   error?: string;
   message?: string;
   statusCode?: number;
 }
-// Add this type at the top of your file (with other type definitions)
-// Add this type to your Tasks.store.ts
+
 export type TaskFilter = 'all' | 'today' | 'important' | 'completed' | 'uncompleted';
 
-// Helper function to safely extract error message
 const getErrorMessage = (error: unknown): string => {
   if (typeof error === 'string') return error;
   if (error instanceof Error) return error.message;
@@ -30,11 +27,9 @@ export const fetchTasks = createAsyncThunk("tasks/fetchTasks", async () => {
     throw new Error("Failed to fetch tasks");
   }
   const data = await response.json();
-  // Normalize MongoDB _id to id for frontend consistency
   return data.map((task: any) => ({
     ...task,
     id: task._id || task.id,
-    // Normalize date to ISO format
     date: task.date ? new Date(task.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
   }));
 });
@@ -102,7 +97,10 @@ export const toggleTaskCompleted = createAsyncThunk(
       const data = await response.json();
       return { ...data, id: data._id || data.id };
     } catch (err) {
-      return rejectWithValue({ error: getErrorMessage(err) } as ApiError);
+      return rejectWithValue({ 
+        error: getErrorMessage(err),
+        statusCode: 500
+      } as ApiError);
     }
   }
 );
@@ -156,8 +154,6 @@ export const deleteAllData = createAsyncThunk(
   }
 );
 
-// Update your initialState interface
-// Update initialState
 const initialState: {
   tasks: Task[];
   directories: string[];
@@ -181,15 +177,18 @@ const tasksSlice = createSlice({
     setFilter: (state, action: PayloadAction<TaskFilter>) => {
       state.currentFilter = action.payload;
     },
-
-// In your tasksSlice reducers, modify the createDirectory action:
     createDirectory: (state, action: PayloadAction<string>) => {
       const newDir = action.payload.trim();
       if (newDir && !state.directories.includes(newDir)) {
         state.directories = [newDir, ...state.directories];
       }
     },
-    
+    toggleTaskCompleted: (state, action: PayloadAction<string>) => {
+      const task = state.tasks.find(task => task.id === action.payload);
+      if (task) {
+        task.completed = !task.completed;
+      }
+    },
     deleteDirectory: (state, action: PayloadAction<string>) => {
       state.directories = state.directories.filter((dir) => dir !== action.payload);
       state.tasks = state.tasks.filter((task) => task.dir !== action.payload);
@@ -216,23 +215,19 @@ const tasksSlice = createSlice({
       .addCase(fetchTasks.fulfilled, (state, action) => {
         state.tasks = action.payload;
       })
-
       .addCase(addNewTask.fulfilled, (state, action) => {
         const newTask = {
           ...action.payload,
-          dir: action.payload.dir?.trim() || 'Main' // This is the key change
+          dir: action.payload.dir?.trim() || 'Main'
         };
         state.tasks = [newTask, ...state.tasks];
       })
-
       .addCase(fetchTasks.rejected, (state, action) => {
         console.error('Fetch tasks failed:', action.error.message);
       })
-      
       .addCase(addNewTask.rejected, (state, action) => {
         console.error('Add task failed:', action.error.message);
       })
-      
       .addCase(removeTask.fulfilled, (state, action) => {
         state.tasks = state.tasks.filter((task) => task.id !== action.payload);
       })
@@ -240,7 +235,6 @@ const tasksSlice = createSlice({
         const error = action.payload as ApiError || action.error;
         console.error('Delete failed:', error.error || error.message);
       })
-      
       .addCase(toggleTaskCompleted.fulfilled, (state, action) => {
         const index = state.tasks.findIndex((task) => task.id === action.payload.id);
         if (index !== -1) {
@@ -251,7 +245,6 @@ const tasksSlice = createSlice({
         const error = action.payload as ApiError || action.error;
         console.error('Toggle failed:', error.error || error.message);
       })
-      
       .addCase(editTask.fulfilled, (state, action) => {
         const index = state.tasks.findIndex((task) => task.id === action.payload.id);
         if (index !== -1) {
@@ -262,7 +255,6 @@ const tasksSlice = createSlice({
         const error = action.payload as ApiError || action.error;
         console.error('Edit failed:', error.error || error.message);
       })
-      
       .addCase(deleteAllData.fulfilled, (state) => {
         state.tasks = [];
         state.directories = ["Main"];
@@ -274,7 +266,6 @@ const tasksSlice = createSlice({
   },
 });
 
-// Middleware
 export const tasksMiddleware: Middleware = (store) => (next) => (action) => {
   if (action.type === addNewTask.fulfilled.type) {
     console.log('New task payload:', action.payload);
@@ -285,7 +276,7 @@ export const tasksMiddleware: Middleware = (store) => (next) => (action) => {
   }
   return result;
 };
-// Actions and Reducer Export
+
 export const tasksActions = { 
   ...tasksSlice.actions, 
   fetchTasks, 
